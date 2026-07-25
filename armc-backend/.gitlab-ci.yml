@@ -1,0 +1,61 @@
+stages:
+  - ticket
+  - docker-build
+  - deploy
+      
+ticket-job:
+  stage: ticket
+  script:
+    - echo "Compiling the code...."
+    - echo "$CI_COMMIT_SHA"
+    - |
+      curl -k --data "{\"message\":\"$CI_COMMIT_SHA\", \"id_project\":\"$CI_PROJECT_ID\"}" -H 'Content-Type: application/json' -X POST $HOST_TICKET_API
+    - echo "Compile complete."
+
+docker-build-job:
+  stage: docker-build
+  script:
+    - echo "Building Docker Image..."
+    - docker login $DOCKER_REGISTRY -u $REGISTRY_USER -p $REGISTRY_TOKEN # Login ke Docker registry
+    - docker build -t $DOCKER_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:latest . # Membangun Docker image
+    - docker push $DOCKER_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:latest # Push image ke Docker registry
+    - docker rmi $DOCKER_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:latest # Hapus image setelah push
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "production" && $CI_PIPELINE_SOURCE == "push"'
+      when: always
+
+deploy-job:
+  stage: deploy
+  script:
+    - echo "Setup SSH..."
+    - mkdir -p ~/.ssh
+    - cat $SSH_PRIVATE_KEY > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H 10.5.255.18 >> ~/.ssh/known_hosts
+
+    # Mengirimkan file variabel lingkungan ke server tujuan
+    - echo "Sending env file..."
+    - cat $ENV_PRODUCTION > /tmp/env_file
+    - scp /tmp/env_file root@10.5.255.18:/tmp/env_file
+
+    # Login ke Docker registry di remote server
+    - echo "Docker login on remote..."
+    - ssh root@10.5.255.18 "docker login $DOCKER_REGISTRY -u $REGISTRY_USER -p $REGISTRY_TOKEN"
+
+    # Pull image terbaru dari registry
+    - echo "Pulling latest image on remote..."
+    - ssh root@10.5.255.18 "docker pull $DOCKER_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:latest"
+
+    # Menyetop dan menghapus container yang lama
+    - echo "Stopping and removing old container..."
+    - ssh root@10.5.255.18 "docker stop $CI_PROJECT_NAME || true"
+    - ssh root@10.5.255.18 "docker rm $CI_PROJECT_NAME || true"
+
+    # Menjalankan container baru
+    - echo "Running new container..."
+    - ssh root@10.5.255.18 "docker run -d --name $CI_PROJECT_NAME -p $PORT:$PORT --env-file /tmp/env_file $DOCKER_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:latest"
+    
+    - echo "Deployment completed."
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "production" && $CI_PIPELINE_SOURCE == "push"'
+      when: always

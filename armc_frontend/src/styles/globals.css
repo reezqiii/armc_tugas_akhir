@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 5px;
+  background: rgba(0, 0, 0, 0.5);
+  cursor: col-resize;
+  user-select: none;
+  touch-action: none;
+}
+
+.resizer.isResizing {
+  background: #0d9488;
+  opacity: 1;
+}
+
+.mantine-NavLink-root[data-active] {
+  background-color: #0d9488 !important;
+  color: white !important;
+}
+
+.mantine-NavLink-root[data-active]:hover {
+  background-color: #0f766e !important;
+}
+
+.mantine-NavLink-root:hover {
+  background-color: #0f766e !important;
+  color: white !important;
+}
+
+@media (hover: hover) {
+  *:hover > .resizer {
+    opacity: 1;
+  }
+
+  .mantine-multiselect-label {
+    @apply font-medium mb-1 text-gray-800 text-sm;
+  }
+
+  .mantine-multiselect-pill {
+    @apply bg-gray-200 text-gray-800 text-sm rounded-md px-2 py-1 mr-1 mb-1;
+  }
+
+  .mantine-TextInput-input:focus,
+  .mantine-Select-input:focus,
+  .mantine-Autocomplete-input:focus,
+  .mantine-MultiSelect-input:focus,
+  .mantine-Textarea-input:focus,
+  .mantine-multiselect-input:focus,
+  .mantine-multiselect-input:focus-within {
+    border-color: #0d9488 !important;
+    box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.2) !important;
+    outline: none !important;
+  }
+
+  .mantine-PasswordInput-input:focus-within {
+    border-color: #0d9488 !important;
+    box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.2) !important;
+  }
+
+  .mantine-MultiSelect-item[data-hovered],
+  .mantine-Select-item[data-hovered],
+  .mantine-Autocomplete-item[data-hovered] {
+    background-color: #f0fdfa !important;
+    color: #0d9488 !important;
+  }
+
+  .mantine-Button-root:focus-visible {
+    outline: 2px solid #0d9488 !important;
+    outline-offset: 2px !important;
+  }
+}
